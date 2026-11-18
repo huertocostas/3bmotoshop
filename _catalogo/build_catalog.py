@@ -40,14 +40,12 @@ for cat, name, desc, price, foto in data:
 
 total = sum(len(v) for v in groups.values())
 e = html.escape
-chips = [f'<button class="chip" type="button" data-f="all" aria-pressed="true">Todos<small>{total}</small></button>']
 blocks, ld = [], []
 for cat in ORDER:
     items = groups.get(cat) or []
     if not items: continue
     items.sort(key=lambda x: (x["value"], x["name"]))
     s = slug(cat)
-    chips.append(f'<button class="chip" type="button" data-f="{s}" aria-pressed="false">{e(cat)}<small>{len(items)}</small></button>')
     lo = items[0]["price"]
     cards = []
     for it in items:
@@ -64,8 +62,9 @@ for cat in ORDER:
                    "image": f"https://3bmotoshop.vercel.app/img/p/{it['id']}-480.webp", "description": it["desc"],
                    "offers": {"@type": "Offer", "price": it["value"], "priceCurrency": "ARS", "availability": "https://schema.org/InStock"}})
     n = len(items)
-    blocks.append(f'<div class="brand" id="m-{s}" data-b="{s}"><div class="brand__head"><h3>{e(cat)}</h3>'
-                  f'<p class="mono">{n} {"modelo" if n == 1 else "modelos"} · desde {lo}</p></div><div class="grid">{"".join(cards)}</div></div>')
+    blocks.append(f'<details class="brand" id="m-{s}"><summary class="brand__head"><h3>{e(cat)}</h3>'
+                  f'<p class="mono">{n} {"modelo" if n == 1 else "modelos"} · desde {lo}</p><span class="chev" aria-hidden="true"></span></summary>'
+                  f'<div class="grid">{"".join(cards)}</div></details>')
 
 ldjson = json.dumps({"@context": "https://schema.org", "@type": "ItemList", "name": "Catálogo 3B Moto Shop",
                      "itemListElement": [{"@type": "ListItem", "position": i + 1, "item": p} for i, p in enumerate(ld)]},
@@ -78,8 +77,8 @@ section = f'''<!--CATALOGO:START-->
       <p class="mono kicker">Catálogo y precios</p>
       <h2>Elegí por marca</h2>
     </div>
-    <div class="chips" role="group" aria-label="Filtrar por marca">{"".join(chips)}</div>
-    {"".join(blocks)}
+    <p class="cat-hint">{total} productos en {len(blocks)} categorías. Tocá una marca para ver modelos y precios.</p>
+    <div class="brands-list">{"".join(blocks)}</div>
     <p class="cat-note">Precios del <a href="https://catalogo.treinta.co/3B_Motoshop-Catalogo" target="_blank" rel="noopener">catálogo online</a> al {FECHA}. Pueden cambiar sin aviso: consultá stock y talle por WhatsApp antes de comprar.</p>
   </div>
   <script type="application/ld+json">{ldjson}</script>
