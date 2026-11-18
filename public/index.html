@@ -21,7 +21,7 @@
 <meta name="twitter:title" content="3B Moto Shop · Cascos certificados">
 <meta name="twitter:description" content="Mayoristas y minoristas en Santiago del Estero. Envíos a todo el país.">
 <meta name="twitter:image" content="https://3bmotoshop.pages.dev/og.jpg">
-<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon.ico" sizes="48x48">
 <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="site.webmanifest">
@@ -29,7 +29,7 @@
 <link rel="preload" href="fonts/instrument.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="img/poster.webp" as="image" type="image/webp" fetchpriority="high">
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"Store","name":"3B Moto Shop","description":"Cascos certificados y accesorios para moto. Venta mayorista y minorista con envíos a todo el país.","url":"https://3bmotoshop.pages.dev/","image":"https://3bmotoshop.pages.dev/og.jpg","logo":"https://3bmotoshop.pages.dev/apple-touch-icon.png","telephone":"+54 385 622-9058","address":{"@type":"PostalAddress","streetAddress":"Av. Moreno Sur 652","addressLocality":"Santiago del Estero","postalCode":"4200","addressRegion":"Santiago del Estero","addressCountry":"AR"},"openingHoursSpecification":[{"@type":"OpeningHoursSpecification","dayOfWeek":["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],"opens":"09:00","closes":"13:00"},{"@type":"OpeningHoursSpecification","dayOfWeek":["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],"opens":"18:00","closes":"22:00"}],"geo":{"@type":"GeoCoordinates","latitude":-27.7924045,"longitude":-64.2626092},"hasMap":"https://www.google.com/maps/dir/?api=1&destination=-27.7924045,-64.2626092","sameAs":["https://www.instagram.com/3b.motoshop/","https://www.tiktok.com/@3b.motoshop","https://www.facebook.com/people/3B-Moto-Shop/61592117421662/"]}
+{"@context":"https://schema.org","@type":"Store","name":"3B Moto Shop","description":"Cascos certificados y accesorios para moto. Venta mayorista y minorista con envíos a todo el país.","url":"https://3bmotoshop.pages.dev/","image":"https://3bmotoshop.pages.dev/og.jpg","logo":"https://3bmotoshop.pages.dev/icon-512.png","telephone":"+54 385 622-9058","address":{"@type":"PostalAddress","streetAddress":"Av. Moreno Sur 652","addressLocality":"Santiago del Estero","postalCode":"4200","addressRegion":"Santiago del Estero","addressCountry":"AR"},"openingHoursSpecification":[{"@type":"OpeningHoursSpecification","dayOfWeek":["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],"opens":"09:00","closes":"13:00"},{"@type":"OpeningHoursSpecification","dayOfWeek":["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],"opens":"18:00","closes":"22:00"}],"geo":{"@type":"GeoCoordinates","latitude":-27.7924045,"longitude":-64.2626092},"hasMap":"https://www.google.com/maps/dir/?api=1&destination=-27.7924045,-64.2626092","sameAs":["https://www.instagram.com/3b.motoshop/","https://www.tiktok.com/@3b.motoshop","https://www.facebook.com/people/3B-Moto-Shop/61592117421662/"]}
 </script>
 <style>
 @font-face{font-family:"Archivo";src:url(fonts/archivo.woff2) format("woff2");font-weight:100 900;font-stretch:62% 125%;font-display:swap}
@@ -75,9 +75,8 @@ p{margin:0}
 .top.is-solid{background:rgba(8,9,26,.78);backdrop-filter:blur(14px) saturate(140%);-webkit-backdrop-filter:blur(14px) saturate(140%);border-color:var(--line)}
 .top .wrap{display:flex;align-items:center;justify-content:space-between;height:70px;gap:16px}
 .logo{display:flex;align-items:center;gap:10px;text-decoration:none}
-.logo svg{width:38px;height:38px}
-.logo b{font:900 22px/1 var(--display);font-stretch:125%;letter-spacing:-.02em;font-style:italic}
-.logo span{display:block;font:500 9.5px/1 var(--mono);letter-spacing:.3em;color:var(--muted);margin-top:4px}
+.logo img{height:44px;width:auto;display:block}
+@media (max-width:420px){.logo img{height:36px}}
 .nav{display:flex;gap:26px;align-items:center}
 .nav a{text-decoration:none;font-size:15px;color:var(--muted);transition:color .2s}
 .nav a:hover{color:var(--bone)}
@@ -303,7 +302,7 @@ section[id]{scroll-margin-top:70px}
 .foot__grid h4{margin:0 0 12px;color:var(--muted);font:500 12px/1.4 var(--mono);letter-spacing:.14em;text-transform:uppercase}
 .foot__grid a{display:block;text-decoration:none;padding:5px 0;color:var(--bone)}
 .foot__grid a:hover{color:var(--cyan)}
-.foot__legal{margin-top:56px;padding-top:22px;border-top:1px solid var(--line);display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;color:var(--muted);font-size:13px}
+.foot__legal{margin-top:56px;padding-top:22px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;color:var(--muted);font-size:13px}
 @media (max-width:860px){.foot__grid{grid-template-columns:1fr 1fr}}
 @media (max-width:420px){.foot__grid{grid-template-columns:1fr}}
 
@@ -329,10 +328,7 @@ section[id]{scroll-margin-top:70px}
 
 <header class="top" id="top">
   <div class="wrap">
-    <a class="logo" href="#inicio" aria-label="3B Moto Shop, inicio">
-      <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M10 38c0-15 10-25 24-25 12 0 20 8 20 19v12c0 3-2 5-5 5H19c-5 0-9-4-9-11z" fill="#6D4BFF"/><path d="M27 26c2-4 6-5 12-5l14 .6c1 2.6 1.5 5.6 1.5 9.4H32c-4 0-6-2-5-5z" fill="#33E1FF"/><path d="M18 44h16" stroke="#08091A" stroke-width="3" stroke-linecap="round"/></svg>
-      <div><b>3B</b><span>MOTO SHOP</span></div>
-    </a>
+    <a class="logo" href="#inicio"><img src="img/logo-88.webp" srcset="img/logo-88.webp 1x, img/logo-176.webp 2x" width="196" height="44" alt="3B Moto Shop" fetchpriority="high"></a>
     <nav class="nav" aria-label="Principal">
       <a href="#local">El local</a>
       <a href="#catalogo">Catálogo</a>
@@ -513,7 +509,7 @@ section[id]{scroll-margin-top:70px}
       <div><h4>Dirección</h4><a href="https://www.google.com/maps/dir/?api=1&amp;destination=-27.7924045,-64.2626092" target="_blank" rel="noopener">Av. Moreno Sur 652<br>Santiago del Estero</a></div>
       <div><h4>Redes</h4><a href="https://www.instagram.com/3b.motoshop/" target="_blank" rel="noopener">Instagram</a><a href="https://www.tiktok.com/@3b.motoshop" target="_blank" rel="noopener">TikTok</a><a href="https://www.facebook.com/people/3B-Moto-Shop/61592117421662/" target="_blank" rel="noopener">Facebook</a></div>
     </div>
-    <div class="foot__legal"><span>© <span id="yr">2026</span> 3B Moto Shop · Santiago del Estero, Argentina</span><a href="#inicio" style="text-decoration:none">Volver arriba ↑</a></div>
+    <div class="foot__legal"><img src="img/logo-88.webp" width="160" height="36" alt="3B Moto Shop" loading="lazy" style="height:36px;width:auto"><span>© <span id="yr">2026</span> 3B Moto Shop · Santiago del Estero, Argentina</span><a href="#inicio" style="text-decoration:none">Volver arriba ↑</a></div>
   </div>
 </footer>
 
