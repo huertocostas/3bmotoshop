@@ -5,9 +5,12 @@ Fotos: site/img/p/<8 primeros chars>-480.webp y -320.webp"""
 import json, re, html, urllib.parse, pathlib
 
 HERE = pathlib.Path(__file__).parent
-SITE = HERE.parent
+ROOT = HERE.parent
+SITE = ROOT / "public"
 WA = "543856229058"
 FECHA = "17/11/2026"
+SITE_URL = "https://3bmotoshop.pages.dev"
+HEADER = "// Generado por tools/build_catalog.py. No editar a mano.\nexport default "
 ORDER = ["LS2 COSMOS", "LS2 ROOKIE", "SHAFT", "AXOR", "HRO", "FXX", "AXXIS", "EDGE", "ICH", "PROTORK", "Accesorios"]
 KEEP_CAPS = {"LS2", "FXX", "HRO", "ICH", "PRO", "AXOR", "AXXIS", "EDGE", "SHAFT", "PROTORK"}
 PRETTY = {"JOKER": "Joker"}
@@ -40,7 +43,7 @@ for cat, name, desc, price, foto in data:
 
 total = sum(len(v) for v in groups.values())
 e = html.escape
-blocks, ld = [], []
+blocks, ld, server = [], [], {}
 for cat in ORDER:
     items = groups.get(cat) or []
     if not items: continue
@@ -56,10 +59,13 @@ for cat in ORDER:
             f'srcset="img/p/{it["id"]}-320.webp 320w, img/p/{it["id"]}-480.webp 480w" sizes="(max-width:700px) 46vw, (max-width:1020px) 30vw, 280px" '
             f'width="480" height="600" loading="lazy" decoding="async" alt="{e(it["name"])}"></div>'
             f'<div class="prod__body"><h4>{e(it["name"])}</h4><p>{e(it["desc"])}</p>'
-            f'<div class="prod__foot"><span class="price">{it["price"]}</span>'
-            f'<a class="ask" href="{e(wa)}" target="_blank" rel="noopener" aria-label="Consultar por WhatsApp: {e(it["name"])}">Consultar</a></div></div></article>')
+            f'<div class="prod__foot"><span class="price">{it["price"]}</span><div class="prod__act">'
+            f'<button class="add" type="button" data-id="{it["id"]}">Agregar</button>'
+            f'<a class="ask" href="{e(wa)}" target="_blank" rel="noopener" aria-label="Consultar por WhatsApp: {e(it["name"])}" title="Consultar por WhatsApp">'
+            f'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2z"/></svg></a></div></div></div></article>')
+        server[it["id"]] = {"n": it["name"], "p": it["value"], "b": cat, "s": cat != "Accesorios"}
         ld.append({"@type": "Product", "name": it["name"], "brand": {"@type": "Brand", "name": cat.split(" ")[0] if cat != "Accesorios" else "3B Moto Shop"},
-                   "image": f"https://3bmotoshop.vercel.app/img/p/{it['id']}-480.webp", "description": it["desc"],
+                   "image": f"{SITE_URL}/img/p/{it['id']}-480.webp", "description": it["desc"],
                    "offers": {"@type": "Offer", "price": it["value"], "priceCurrency": "ARS", "availability": "https://schema.org/InStock"}})
     n = len(items)
     blocks.append(f'<details class="brand" id="m-{s}"><summary class="brand__head"><h3>{e(cat)}</h3>'
@@ -85,6 +91,7 @@ section = f'''<!--CATALOGO:START-->
 </section>
 <!--CATALOGO:END-->'''
 
+(ROOT / "lib" / "catalog.js").write_text(HEADER + json.dumps(server, ensure_ascii=False, indent=0) + ";\n", encoding="utf-8", newline="\n")
 idx = SITE / "index.html"
 s = idx.read_text(encoding="utf-8")
 s = re.sub(r"<!--CATALOGO:START-->.*?<!--CATALOGO:END-->", lambda m: section, s, flags=re.S)

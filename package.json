@@ -1,0 +1,12 @@
+{
+  "name": "3bmotoshop",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler pages dev public --port 8788",
+    "catalogo": "py tools/build_catalog.py"
+  },
+  "devDependencies": {
+    "wrangler": "4.45.0"
+  }
+}

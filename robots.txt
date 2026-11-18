@@ -1,3 +1,0 @@
-User-agent: *
-Allow: /
-Sitemap: https://3bmotoshop.vercel.app/sitemap.xml
