@@ -274,14 +274,14 @@ section[id]{scroll-margin-top:64px}
 .hours td{text-align:right;color:var(--text-2);font-variant-numeric:tabular-nums}
 .hours tr.today th,.hours tr.today td{color:var(--text)}
 .hours tr.today th::after{content:"hoy";display:inline-block;font:500 12px/1 var(--mono);color:var(--accent);margin-left:12px;vertical-align:1px}
-.map{position:relative;border-radius:20px;overflow:hidden;min-height:360px;border:1px solid var(--line);background:var(--card)}
-.map iframe{position:absolute;inset:0;width:100%;height:100%;border:0;filter:invert(.9) hue-rotate(190deg) saturate(.4) contrast(.95)}
-.map__face{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-start;gap:16px;padding:clamp(24px,3vw,32px);background:var(--card)}
-.map__pin{display:none}
+.map{display:flex;flex-direction:column;border-radius:20px;overflow:hidden;border:1px solid var(--line);background:var(--card)}
+.map__frame{position:relative;flex:1;min-height:240px;background:var(--raised);border-bottom:1px solid var(--line)}
+.map__frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0;filter:invert(.9) hue-rotate(180deg) saturate(.5) contrast(.95)}
+.map__face{display:flex;flex-direction:column;gap:12px;padding:clamp(24px,3vw,32px)}
 .map__face address{font:600 clamp(28px,3.4vw,40px)/1.08 var(--display);font-stretch:112%;font-style:normal;letter-spacing:-.02em}
 .map__face p{color:var(--text-2)}
-.map__actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:auto}
-@media (max-width:860px){.visit{grid-template-columns:1fr}.map{min-height:340px}}
+.map__actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px}
+@media (max-width:860px){.visit{grid-template-columns:1fr}.map__frame{min-height:220px}}
 
 /* pie */
 .foot{background:var(--bg-0);border-top:1px solid var(--line);padding-block:clamp(64px,9vw,112px) 32px}
@@ -455,13 +455,14 @@ section[id]{scroll-margin-top:64px}
         <p class="note">Estamos dentro del mercado El Morterito. En feriados el horario puede variar: confirmá por WhatsApp antes de ir.</p>
       </div>
       <div class="map rv" id="ubicacion">
-        <div class="map__face" id="mapFace">
+        <div class="map__frame"><iframe title="Mapa: 3B Moto Shop, Av. Moreno Sur 652, Santiago del Estero" src="https://www.google.com/maps?q=-27.7924045,-64.2626092&amp;z=16&amp;output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe></div>
+        <div class="map__face">
           <p class="kicker">El Morterito · Santiago del Estero</p>
           <address><a href="https://www.google.com/maps/dir/?api=1&amp;destination=-27.7924045,-64.2626092" target="_blank" rel="noopener" style="text-decoration:none">Av. Moreno Sur 652</a></address>
           <p>Entre San Martín y Pedro León Gallo, Santiago del Estero capital (4200).</p>
           <div class="map__actions">
             <a class="btn" href="https://www.google.com/maps/dir/?api=1&amp;destination=-27.7924045,-64.2626092" target="_blank" rel="noopener">Cómo llegar</a>
-            <button class="btn btn--ghost" type="button" id="loadMap">Ver mapa</button>
+            <a class="btn btn--ghost" href="https://www.google.com/maps/search/?api=1&amp;query=-27.7924045,-64.2626092" target="_blank" rel="noopener">Abrir en Google Maps</a>
           </div>
         </div>
       </div>
@@ -518,12 +519,6 @@ section[id]{scroll-margin-top:64px}
   vid();
   if('IntersectionObserver' in window){new IntersectionObserver(function(es){es.forEach(function(e){if(reduce.matches)return;e.isIntersecting?v.play().catch(function(){}):v.pause()})}).observe(v)}
 
-  // map facade
-  d.getElementById('loadMap').addEventListener('click',function(){
-    var f=d.createElement('iframe');f.title='Mapa: 3B Moto Shop, Av. Moreno Sur 652, Santiago del Estero';f.loading='lazy';f.referrerPolicy='no-referrer-when-downgrade';
-    f.src='https://www.google.com/maps?q=-27.7924045,-64.2626092&z=17&output=embed';
-    var m=d.getElementById('ubicacion');m.insertBefore(f,m.firstChild);d.getElementById('mapFace').style.display='none';
-  });
 })();
 </script>
 <script src="cart.js" defer></script>
