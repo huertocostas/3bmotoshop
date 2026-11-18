@@ -24,10 +24,10 @@
     var b = ev.target.closest(".add"); if (!b) return;
     var card = b.closest(".prod"), id = b.getAttribute("data-id");
     var price = parseInt(card.querySelector(".price").textContent.replace(/\D/g, ""), 10);
-    var needsSize = !b.closest("#m-accesorios");
+    var sz = b.getAttribute("data-sizes") || "", needsSize = sz !== "";
     var ex = cart.find(function (l) { return l.id === id && !l.talle; });
     if (ex) ex.qty = Math.min(10, ex.qty + 1);
-    else cart.push({ key: id + "-" + Date.now(), id: id, name: card.querySelector("h4").textContent, price: price, qty: 1, s: needsSize, talle: "" });
+    else cart.push({ key: id + "-" + Date.now(), id: id, name: card.querySelector("h4").textContent, thumb: (card.querySelector(".prod__img img") || {}).getAttribute ? card.querySelector(".prod__img img").getAttribute("srcset").split(" ")[0] : "", price: price, qty: 1, s: needsSize, sizes: needsSize ? sz.split(",") : [], talle: "" });
     save(); badge();
     b.classList.add("is-added"); b.textContent = "Agregado ✓";
     setTimeout(function () { b.classList.remove("is-added"); b.textContent = "Agregar"; }, 1400);
@@ -50,8 +50,8 @@
     }
     var h = cart.map(function (l, i) {
       var sel = l.s ? '<select data-i="' + i + '" class="' + (l.talle ? "" : "need") + '" aria-label="Talle de ' + esc(l.name) + '"><option value="">Elegí talle</option>' +
-        TALLES.map(function (t) { return '<option' + (l.talle === t ? " selected" : "") + ">" + t + "</option>"; }).join("") + "</select>" : "";
-      return '<div class="line"><img src="img/p/' + l.id + '-320.webp" alt="" width="64" height="80"><div><h4>' + esc(l.name) + '</h4><div class="lp">' + money(l.price) + "</div>" + sel + "</div>" +
+        (l.sizes && l.sizes.length ? l.sizes : TALLES).map(function (t) { return '<option' + (l.talle === t ? " selected" : "") + ">" + t + "</option>"; }).join("") + "</select>" : "";
+      return '<div class="line"><img src="' + esc(l.thumb || ("img/p/" + l.id + "-320.webp")) + '" alt="" width="64" height="80"><div><h4>' + esc(l.name) + '</h4><div class="lp">' + money(l.price) + "</div>" + sel + "</div>" +
         '<div class="qty"><button type="button" data-q="-1" data-i="' + i + '" aria-label="Quitar uno">−</button><span>' + l.qty + '</span><button type="button" data-q="1" data-i="' + i + '" aria-label="Agregar uno">+</button></div></div>';
     }).join("");
     h += '<p class="note" style="font-size:13px;margin-top:10px">¿No sabés tu talle? <a href="#tipos" data-close style="color:var(--cyan)">Mirá la guía de talles</a>. Confirmamos stock por WhatsApp.</p>';

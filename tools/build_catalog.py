@@ -43,7 +43,7 @@ for cat, name, desc, price, foto in data:
 
 total = sum(len(v) for v in groups.values())
 e = html.escape
-blocks, ld, server = [], [], {}
+blocks, ld, server, seed = [], [], {}, []
 for cat in ORDER:
     items = groups.get(cat) or []
     if not items: continue
@@ -60,10 +60,12 @@ for cat in ORDER:
             f'width="480" height="600" loading="lazy" decoding="async" alt="{e(it["name"])}"></div>'
             f'<div class="prod__body"><h4>{e(it["name"])}</h4><p>{e(it["desc"])}</p>'
             f'<div class="prod__foot"><span class="price">{it["price"]}</span><div class="prod__act">'
-            f'<button class="add" type="button" data-id="{it["id"]}">Agregar</button>'
+            f'<button class="add" type="button" data-id="{it["id"]}" data-sizes="{"" if cat == "Accesorios" else "XS,S,M,L,XL,XXL"}">Agregar</button>'
             f'<a class="ask" href="{e(wa)}" target="_blank" rel="noopener" aria-label="Consultar por WhatsApp: {e(it["name"])}" title="Consultar por WhatsApp">'
             f'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2z"/></svg></a></div></div></div></article>')
         server[it["id"]] = {"n": it["name"], "p": it["value"], "b": cat, "s": cat != "Accesorios"}
+        seed.append({"id": it["id"], "brand": cat, "name": it["name"], "desc": it["desc"], "price": it["value"], "img": f"img/p/{it['id']}",
+                     "sizes": ["XS", "S", "M", "L", "XL", "XXL"] if cat != "Accesorios" else None, "active": True})
         ld.append({"@type": "Product", "name": it["name"], "brand": {"@type": "Brand", "name": cat.split(" ")[0] if cat != "Accesorios" else "3B Moto Shop"},
                    "image": f"{SITE_URL}/img/p/{it['id']}-480.webp", "description": it["desc"],
                    "offers": {"@type": "Offer", "price": it["value"], "priceCurrency": "ARS", "availability": "https://schema.org/InStock"}})
@@ -91,7 +93,8 @@ section = f'''<!--CATALOGO:START-->
 </section>
 <!--CATALOGO:END-->'''
 
-(ROOT / "lib" / "catalog.js").write_text(HEADER + json.dumps(server, ensure_ascii=False, indent=0) + ";\n", encoding="utf-8", newline="\n")
+seed_obj = {"version": 1, "brands": [c for c in ORDER if groups.get(c)], "products": seed}
+(ROOT / "lib" / "seed.js").write_text("// Catálogo inicial (generado por tools/build_catalog.py). El catálogo vivo está en Cloudflare KV.\nexport default " + json.dumps(seed_obj, ensure_ascii=False, indent=0) + ";\n", encoding="utf-8", newline="\n")
 idx = SITE / "index.html"
 s = idx.read_text(encoding="utf-8")
 s = re.sub(r"<!--CATALOGO:START-->.*?<!--CATALOGO:END-->", lambda m: section, s, flags=re.S)

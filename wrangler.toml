@@ -1,3 +1,7 @@
 name = "3bmotoshop"
 pages_build_output_dir = "public"
 compatibility_date = "2025-10-11"
+
+[[kv_namespaces]]
+binding = "DATA"
+id = "363d973b57c6434181d6406a8a0dd61c"

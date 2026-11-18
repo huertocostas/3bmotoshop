@@ -1,5 +1,6 @@
 // POST /api/checkout — crea el pago en Mercado Pago o registra una reserva para pagar en efectivo.
 import { priceOrder, orderId, nextOpening, notifyAdmin, summary, money, json, SHOP } from "../../lib/shop.js";
+import { getCatalog } from "../../lib/catalog-store.js";
 
 export async function onRequestPost({ request, env, waitUntil }) {
   let body;
@@ -7,7 +8,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
   if (body.website) return json({ error: "Pedido inválido." }, 400); // campo trampa anti-bots
 
   let order;
-  try { order = priceOrder(body); } catch (e) { return json({ error: e.message }, 400); }
+  try { order = priceOrder(body, await getCatalog(env)); } catch (e) { return json({ error: e.message }, 400); }
   const id = orderId();
   const origin = new URL(request.url).origin;
 
@@ -24,7 +25,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
   const pref = {
     items: order.lines.map((l) => ({ id: l.id, title: `${l.title}${l.talle ? ` · talle ${l.talle}` : ""}`.slice(0, 250),
       quantity: l.qty, unit_price: l.unit, currency_id: "ARS", category_id: "fashion",
-      picture_url: `${origin}/img/p/${l.id}-480.webp` })),
+      picture_url: l.img ? `${origin}/${l.img.replace(/^\//, "")}` : undefined })),
     payer: { name: order.customer.name },
     external_reference: id,
     statement_descriptor: "3B MOTO SHOP",
