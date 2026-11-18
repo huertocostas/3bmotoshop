@@ -3,6 +3,9 @@
   var TALLES = ["XS", "S", "M", "L", "XL", "XXL"];
   var app = document.getElementById("app");
   var cat = null, version = 0, dirty = false, query = "", saving = false;
+  var SV = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
+  var I = { edit: SV + '<path d="M12 20h9"/><path d="M16.4 3.6a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4Z"/></svg>', up: SV + '<path d="m18 15-6-6-6 6"/></svg>',
+    down: SV + '<path d="m6 9 6 6 6-6"/></svg>', x: SV + '<path d="M18 6 6 18M6 6l12 12"/></svg>', plus: SV + '<path d="M12 5v14M5 12h14"/></svg>' };
 
   function esc(t) { return String(t == null ? "" : t).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   function money(n) { return "$ " + Math.round(n).toLocaleString("es-AR"); }
@@ -56,8 +59,8 @@
     var html = '<header class="top"><div class="wrap"><img src="/img/logo-88.webp" alt="3B Moto Shop" width="151" height="34"><span class="sp"></span>' +
       '<span id="status" class="status"></span><button class="btn" id="save" type="button">Guardar cambios</button></div></header><main class="wrap">' +
       '<div class="bar"><input type="search" id="q" placeholder="Buscar producto…" value="' + esc(query) + '" aria-label="Buscar producto">' +
-      '<button class="btn btn--ghost" id="add" type="button">+ Agregar producto</button></div>' +
-      '<p class="help">Cambiá precios y disponibilidad acá mismo, o tocá ✎ para editar todo (foto, talles, marca). Después tocá <b>Guardar cambios</b>: se ve en la página al instante. ' +
+      '<button class="btn btn--ghost" id="add" type="button">' + I.plus + 'Agregar producto</button></div>' +
+      '<p class="help">Cambiá precios y disponibilidad acá mismo, o tocá el lápiz para editar todo (foto, talles, marca). Después tocá <b>Guardar cambios</b>: se ve en la página al instante. ' +
       '<a href="/#catalogo" target="_blank" rel="noopener" style="color:var(--cyan)">Ver página</a> · <a href="#" id="logout" style="color:var(--muted)">Salir</a></p>';
     var shown = 0;
     cat.brands.forEach(function (b, bi) {
@@ -65,9 +68,9 @@
       if (!items.length) return;
       shown += items.length;
       var total = cat.products.filter(function (p) { return p.brand === b; }).length;
-      html += '<section class="group"><div class="group__head"><h2>' + esc(b) + "<small>" + total + " productos</small></h2>" +
-        (q ? "" : '<button class="ico" data-mv="' + bi + '" data-d="-1" aria-label="Subir marca ' + esc(b) + '"' + (bi === 0 ? " disabled" : "") + '>↑</button><button class="ico" data-mv="' + bi + '" data-d="1" aria-label="Bajar marca ' + esc(b) + '"' + (bi === cat.brands.length - 1 ? " disabled" : "") + ">↓</button>" +
-          '<button class="ico" data-rn="' + bi + '" aria-label="Renombrar marca ' + esc(b) + '">✎</button>') + "</div>";
+      html += '<section class="group"><div class="group__head"><h2>' + esc(b) + "<small>" + total + (total === 1 ? " producto" : " productos") + "</small></h2>" +
+        (q ? "" : '<button class="ico" data-mv="' + bi + '" data-d="-1" aria-label="Subir marca ' + esc(b) + '"' + (bi === 0 ? " disabled" : "") + '>' + I.up + '</button><button class="ico" data-mv="' + bi + '" data-d="1" aria-label="Bajar marca ' + esc(b) + '"' + (bi === cat.brands.length - 1 ? " disabled" : "") + ">" + I.down + "</button>" +
+          '<button class="ico" data-rn="' + bi + '" aria-label="Renombrar marca ' + esc(b) + '">' + I.edit + '</button>') + "</div>";
       items.sort(function (a, c) { return a.price - c.price; }).forEach(function (p) {
         var sizes = p.sizes === null ? "Sin talle" : p.sizes.length ? "Talles: " + p.sizes.join(" ") : "Sin talles en stock";
         html += '<div class="row' + (p.active === false ? " off" : "") + '">' +
@@ -75,7 +78,7 @@
           '<div class="info"><div class="nm">' + esc(p.name) + '</div><div class="meta">' + esc(sizes) + "</div></div>" +
           '<label class="price"><span>$</span><input type="number" inputmode="numeric" min="0" step="100" value="' + p.price + '" data-price="' + esc(p.id) + '" aria-label="Precio de ' + esc(p.name) + '"></label>' +
           '<label class="sw" title="Disponible en la página"><input type="checkbox" data-act="' + esc(p.id) + '"' + (p.active !== false ? " checked" : "") + ' aria-label="Disponible: ' + esc(p.name) + '"><span></span></label>' +
-          '<button class="ico edit" data-ed="' + esc(p.id) + '" aria-label="Editar ' + esc(p.name) + '">✎</button></div>';
+          '<button class="ico edit" data-ed="' + esc(p.id) + '" aria-label="Editar ' + esc(p.name) + '">' + I.edit + '</button></div>';
       });
       html += "</section>";
     });
@@ -116,7 +119,7 @@
     var p = isNew ? { id: "p" + Date.now().toString(36), brand: cat.brands[0] || "", name: "", desc: "", price: 0, img: "", sizes: TALLES.slice(), active: true } : Object.assign({}, find(id));
     var dlg = document.getElementById("dlg");
     var opts = cat.brands.map(function (b) { return "<option" + (b === p.brand ? " selected" : "") + ">" + esc(b) + "</option>"; }).join("") + '<option value="__new">+ Nueva marca…</option>';
-    dlg.innerHTML = '<form method="dialog" id="ef"><div class="mhead"><h3 style="font-size:20px">' + (isNew ? "Nuevo producto" : "Editar producto") + '</h3><button class="ico" value="cancel" aria-label="Cerrar">×</button></div><div class="mbody">' +
+    dlg.innerHTML = '<form method="dialog" id="ef"><div class="mhead"><h3 style="font-size:20px">' + (isNew ? "Nuevo producto" : "Editar producto") + '</h3><button class="ico" value="cancel" aria-label="Cerrar">' + I.x + '</button></div><div class="mbody">' +
       '<div class="photo">' + (p.img ? '<img id="pimg" src="' + thumb(p) + '" alt="">' : '<div class="noimg" id="pimg"></div>') +
       '<label>Foto<input type="file" id="pfile" accept="image/*"><small id="pmsg">Se recorta y achica sola (formato vertical).</small></label></div>' +
       '<div class="two"><label>Marca<select name="brand">' + opts + '</select></label><label>Precio ($)<input type="number" name="price" inputmode="numeric" min="0" step="100" required value="' + p.price + '"></label></div>' +

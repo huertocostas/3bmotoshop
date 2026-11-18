@@ -59,6 +59,8 @@ for cat in ORDER:
             f'srcset="img/p/{it["id"]}-320.webp 320w, img/p/{it["id"]}-480.webp 480w" sizes="(max-width:700px) 46vw, (max-width:1020px) 30vw, 280px" '
             f'width="480" height="600" loading="lazy" decoding="async" alt="{e(it["name"])}"></div>'
             f'<div class="prod__body"><h4>{e(it["name"])}</h4><p>{e(it["desc"])}</p>'
+            + ('' if cat == 'Accesorios' else '<ul class="sz" aria-label="Talles disponibles">' + ''.join(f'<li>{x}</li>' for x in ['XS','S','M','L','XL','XXL']) + '</ul>')
+            + f''
             f'<div class="prod__foot"><span class="price">{it["price"]}</span><div class="prod__act">'
             f'<button class="add" type="button" data-id="{it["id"]}" data-sizes="{"" if cat == "Accesorios" else "XS,S,M,L,XL,XXL"}">Agregar</button>'
             f'<a class="ask" href="{e(wa)}" target="_blank" rel="noopener" aria-label="Consultar por WhatsApp: {e(it["name"])}" title="Consultar por WhatsApp">'

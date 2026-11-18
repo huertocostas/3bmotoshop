@@ -29,7 +29,7 @@
     if (ex) ex.qty = Math.min(10, ex.qty + 1);
     else cart.push({ key: id + "-" + Date.now(), id: id, name: card.querySelector("h4").textContent, thumb: (card.querySelector(".prod__img img") || {}).getAttribute ? card.querySelector(".prod__img img").getAttribute("srcset").split(" ")[0] : "", price: price, qty: 1, s: needsSize, sizes: needsSize ? sz.split(",") : [], talle: "" });
     save(); badge();
-    b.classList.add("is-added"); b.textContent = "Agregado ✓";
+    b.classList.add("is-added"); b.textContent = "Agregado";
     setTimeout(function () { b.classList.remove("is-added"); b.textContent = "Agregar"; }, 1400);
     openBtn.classList.remove("bump"); void openBtn.offsetWidth; openBtn.classList.add("bump");
     open();
@@ -54,7 +54,7 @@
       return '<div class="line"><img src="' + esc(l.thumb || ("img/p/" + l.id + "-320.webp")) + '" alt="" width="64" height="80"><div><h4>' + esc(l.name) + '</h4><div class="lp">' + money(l.price) + "</div>" + sel + "</div>" +
         '<div class="qty"><button type="button" data-q="-1" data-i="' + i + '" aria-label="Quitar uno">−</button><span>' + l.qty + '</span><button type="button" data-q="1" data-i="' + i + '" aria-label="Agregar uno">+</button></div></div>';
     }).join("");
-    h += '<p class="note" style="font-size:13px;margin-top:10px">¿No sabés tu talle? <a href="#tipos" data-close style="color:var(--cyan)">Mirá la guía de talles</a>. Confirmamos stock por WhatsApp.</p>';
+    h += '<p class="note" style="font-size:13px;margin-top:10px">¿No sabés tu talle? <a href="#tipos" data-close style="color:var(--accent)">Mirá la guía de talles</a>. Confirmamos stock por WhatsApp.</p>';
     h += '<form class="form" id="coForm" novalidate>' +
       '<label>Nombre y apellido<input name="name" autocomplete="name" required value="' + esc(state.customer.name) + '"></label>' +
       '<label>Teléfono / WhatsApp<input name="phone" type="tel" inputmode="tel" autocomplete="tel" required placeholder="385 ..." value="' + esc(state.customer.phone) + '"></label>' +
@@ -68,7 +68,7 @@
     body.innerHTML = h;
     var label = state.method === "mp" ? "Pagar con Mercado Pago" : "Reservar y pagar en el local";
     foot.innerHTML = '<div class="total"><span>Total</span><b>' + money(total()) + "</b></div>" +
-      '<button class="btn btn--violet pay" type="button" id="payBtn"' + (state.busy ? " disabled" : "") + ">" + (state.busy ? "Procesando…" : label) + "</button>" +
+      '<button class="btn pay" type="button" id="payBtn"' + (state.busy ? " disabled" : "") + ">" + (state.busy ? "Procesando…" : label) + "</button>" +
       (state.error ? '<p class="err" role="alert">' + esc(state.error) + "</p>" : "");
     d.getElementById("payBtn").addEventListener("click", submit);
   }
@@ -117,16 +117,16 @@
       body.innerHTML = '<div class="done"><p class="mono kicker" style="justify-content:center">Reserva confirmada</p><p class="big">' + esc(r.when) + "</p>" +
         "<p>Pasá por <strong>" + esc(r.address) + "</strong> y pagás en efectivo al retirar.</p><p>Total: <strong>" + esc(r.total) + "</strong></p>" +
         '<span class="code">' + esc(r.id) + '</span><p style="font-size:13.5px">Mostrá este número de pedido en el local.</p></div>';
-      foot.innerHTML = '<a class="btn btn--violet pay" href="' + wa + '" target="_blank" rel="noopener">Avisar por WhatsApp</a>';
+      foot.innerHTML = '<a class="btn pay" href="' + wa + '" target="_blank" rel="noopener">Avisar por WhatsApp</a>';
       return;
     }
-    var map = { ok: ["¡Pago aprobado!", "Ya recibimos tu pago. Te escribimos por WhatsApp para coordinar el retiro o el envío."],
+    var map = { ok: ["Pago aprobado", "Ya recibimos tu pago. Te escribimos por WhatsApp para coordinar el retiro o el envío."],
       pendiente: ["Pago pendiente", "Mercado Pago está procesando el pago. Te avisamos apenas se acredite."],
       error: ["No se pudo completar el pago", "No se hizo ningún cobro. Podés intentar de nuevo o elegir pagar en efectivo en el local."] };
     var m = map[r.status] || map.error;
     body.innerHTML = '<div class="done"><p class="big">' + m[0] + "</p><p>" + m[1] + "</p>" + (r.id ? '<span class="code">' + esc(r.id) + "</span>" : "") + "</div>";
-    foot.innerHTML = r.status === "error" ? '<button class="btn btn--violet pay" type="button" id="retry">Volver al carrito</button>' :
-      '<a class="btn btn--violet pay" href="https://wa.me/' + WA + "?text=" + encodeURIComponent("Hola! Pagué el pedido " + (r.id || "") + " con Mercado Pago en la web.") + '" target="_blank" rel="noopener">Escribir por WhatsApp</a>';
+    foot.innerHTML = r.status === "error" ? '<button class="btn pay" type="button" id="retry">Volver al carrito</button>' :
+      '<a class="btn pay" href="https://wa.me/' + WA + "?text=" + encodeURIComponent("Hola! Pagué el pedido " + (r.id || "") + " con Mercado Pago en la web.") + '" target="_blank" rel="noopener">Escribir por WhatsApp</a>';
     var rb = d.getElementById("retry"); if (rb) rb.addEventListener("click", function () { state.view = "cart"; render(); });
   }
 
