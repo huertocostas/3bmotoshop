@@ -20,6 +20,7 @@ Los bindings están en `wrangler.toml`: `DB` (D1) y `DATA` (KV, fotos subidas de
 - `migrations/0002_tienda_web.sql` — tablas aparte para lo que la web necesita: `web_modelos` (descripción, foto y visible de cada tarjeta), `web_ventas` (forma de pago, entrega, n.º de pago MP) y `web_config` (versión del catálogo, orden de marcas).
 - Cada tarjeta del catálogo es un **modelo**; en `productos` hay **una fila por talle** con su stock (`codigo` = `<modelo>-<talle>`, los que no usan talle: talle `Único`, código `<modelo>-U`).
 - Cada compra crea cliente (por DNI), venta `pendiente` y su detalle. Mercado Pago aprobado → `pagada` y descuenta stock en un solo batch; rechazado → `cancelada` sin tocar stock. Las reservas en efectivo se marcan pagadas desde el panel.
+- La compra minorista no pide DNI: el cliente se guarda con `dni` = `T` + su teléfono. El DNI real solo se pide en la **consulta mayorista** (`migrations/0003`, tabla `web_consultas`), que queda en el panel y se manda al WhatsApp mayorista para responderla.
 - Sin el binding `DB` el sitio sigue funcionando con el catálogo de KV.
 - Aplicar migraciones: `npx wrangler d1 migrations apply gestion_cascos --remote`. Carga inicial desde KV: `node tools/catalog_to_sql.mjs catalogo-kv.json > carga.sql`.
 

@@ -114,6 +114,13 @@
     var t = e.target.closest("button, a"); if (!t) return;
     if (t.dataset.tab) { if (t.dataset.tab !== tab) { tab = t.dataset.tab; if (tab === "ventas") report = null; render(); } return; }
     if (t.dataset.venta) return setVenta(+t.dataset.venta, t.dataset.estado, t);
+    if (t.dataset.cons) {
+      t.disabled = true;
+      return api("/api/admin/ventas", { method: "POST", json: { consulta: +t.dataset.cons, estado: t.dataset.estado } }).then(function (r) {
+        if (!r.ok) { t.disabled = false; return alert(r.error || "No se pudo cambiar."); }
+        report = null; render();
+      });
+    }
     if (t.id === "save") return save();
     if (t.id === "add") return edit(null);
     if (t.id === "logout") { e.preventDefault(); if (dirty && !confirm("Tenés cambios sin guardar. ¿Salir igual?")) return; dirty = false; api("/api/admin/login", { method: "DELETE" }).then(function () { showLogin(); }); return; }
@@ -143,6 +150,19 @@
     }
     if (report.error) { app.innerHTML = html + '<p class="empty">' + esc(report.error) + "</p></main>"; return; }
     html += '<p class="help">Los pagos con Mercado Pago se marcan solos. Las reservas en efectivo marcalas como pagadas cuando las cobres: ahí se descuenta el stock. Cancelar una venta pagada devuelve el stock.</p>';
+    var cons = report.consultas || [], nuevas = cons.filter(function (q) { return q.estado === "nueva"; }).length;
+    html += '<section class="group"><div class="group__head"><h2>Consultas mayoristas<small>' + (nuevas ? nuevas + (nuevas === 1 ? " sin responder" : " sin responder") : "todas respondidas") + "</small></h2></div>";
+    if (!cons.length) html += '<p class="empty">Todavía no hay consultas.</p>';
+    cons.forEach(function (q) {
+      var tel = String(q.telefono || "").replace(/\D/g, ""); if (tel && tel.indexOf("54") !== 0) tel = "549" + tel.replace(/^0/, "");
+      var nom = String(q.cliente).split(" ")[0];
+      var reply = "https://wa.me/" + tel + "?text=" + encodeURIComponent("Hola " + nom + "! Te escribimos de 3B Moto Shop por tu consulta mayorista " + q.codigo + ".\n");
+      html += '<div class="venta"><div class="vh"><b>' + esc(q.codigo) + '</b><span class="badge ' + (q.estado === "nueva" ? "pendiente" : "pagada") + '">' + (q.estado === "nueva" ? "Sin responder" : "Respondida") + '</span><span class="meta">' + fecha(q.fecha) + "</span></div>" +
+        '<div class="vb"><div style="white-space:pre-line">' + esc(q.detalle) + '</div><div class="meta">' + esc(q.cliente) + " · DNI " + esc(q.dni) + " · " + esc(q.telefono || "") + (q.ciudad ? " · " + esc(q.ciudad) : "") + "</div></div>" +
+        '<div class="va">' + (tel ? '<a class="btn" href="' + esc(reply) + '" target="_blank" rel="noopener">Responder por WhatsApp</a>' : "") +
+        '<button class="btn btn--ghost" type="button" data-cons="' + q.id_consulta + '" data-estado="' + (q.estado === "nueva" ? "respondida" : "nueva") + '">' + (q.estado === "nueva" ? "Marcar respondida" : "Marcar sin responder") + "</button></div></div>";
+    });
+    html += "</section>";
     html += '<section class="group"><div class="group__head"><h2>Últimas ventas<small>' + report.ventas.length + "</small></h2></div>";
     if (!report.ventas.length) html += '<p class="empty">Todavía no hay ventas.</p>';
     report.ventas.forEach(function (v) {
@@ -151,7 +171,7 @@
         (v.estado !== "cancelada" ? '<button class="btn btn--ghost" type="button" data-venta="' + v.id_venta + '" data-estado="cancelada">Cancelar</button>' : "");
       html += '<div class="venta"><div class="vh"><b>' + esc(v.codigo) + '</b><span class="badge ' + v.estado + '">' + ESTADO[v.estado] + '</span><span class="meta">' + fecha(v.fecha_venta) + " · " +
         (v.metodo === "efectivo" ? "Efectivo" : "Mercado Pago") + " · " + (v.entrega === "envio" ? "Envío" : "Retiro") + '</span><b class="tot">' + money(v.total) + "</b></div>" +
-        '<div class="vb"><div>' + items + '</div><div class="meta">' + esc(v.cliente) + " · DNI " + esc(v.dni) + (v.telefono ? ' · <a href="https://wa.me/' + esc(String(v.telefono).replace(/\D/g, "")) + '" target="_blank" rel="noopener">' + esc(v.telefono) + "</a>" : "") + (v.pago_mp ? " · Pago MP #" + esc(v.pago_mp) : "") + "</div></div>" +
+        '<div class="vb"><div>' + items + '</div><div class="meta">' + esc(v.cliente) + (/^\d/.test(v.dni) ? " · DNI " + esc(v.dni) : "") + (v.telefono ? ' · <a href="https://wa.me/' + esc(String(v.telefono).replace(/\D/g, "")) + '" target="_blank" rel="noopener">' + esc(v.telefono) + "</a>" : "") + (v.pago_mp ? " · Pago MP #" + esc(v.pago_mp) : "") + "</div></div>" +
         '<div class="va">' + acts + "</div></div>";
     });
     html += "</section>";

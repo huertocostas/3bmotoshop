@@ -232,6 +232,12 @@ section[id]{scroll-margin-top:64px}
 .total{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
 .total b{font:600 24px/1 var(--body);font-variant-numeric:tabular-nums}
 .pay{width:100%;justify-content:center}
+.pay+.pay{margin-top:8px}
+.form textarea{border-radius:10px;border:1px solid var(--line-2);background:var(--bg);color:var(--text);padding:10px 12px;font:400 16px/1.4 var(--body);resize:vertical}
+.form input:focus-visible,.form textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.linkbtn{background:none;border:0;padding:0;font:inherit;color:var(--accent);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.may-link{text-align:center;margin-top:20px}
+.card .row-btns{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
 .pay[disabled]{opacity:.6;cursor:wait}
 .err{color:#f08b8e;font-size:14px;margin-top:8px}
 .done{text-align:center;padding:24px 4px}
@@ -386,8 +392,8 @@ section[id]{scroll-margin-top:64px}
       <article class="card card--wide rv">
         <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17.5" cy="17.5" r="1.8"/></svg>
         <h3>Venta mayorista</h3>
-        <p>Amplia variedad en stock para comercios y revendedores. Tenemos un WhatsApp exclusivo para pedidos por mayor.</p>
-        <a class="btn" href="https://wa.me/543854117240" target="_blank" rel="noopener">WhatsApp mayorista</a>
+        <p>Amplia variedad en stock para comercios y revendedores. Dejanos tus datos y qué necesitás, y te pasamos los precios por mayor por WhatsApp.</p>
+        <div class="row-btns"><button class="btn" type="button" data-may>Pedir precio mayorista</button><a class="mono" href="https://wa.me/543854117240" target="_blank" rel="noopener">WhatsApp mayorista</a></div>
       </article>
     </div>
   </div>

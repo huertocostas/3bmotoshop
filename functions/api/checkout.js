@@ -34,7 +34,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
     items: order.lines.map((l) => ({ id: l.id, title: `${l.title}${l.talle ? ` · talle ${l.talle}` : ""}`.slice(0, 250),
       quantity: l.qty, unit_price: l.unit, currency_id: "ARS", category_id: "fashion",
       picture_url: l.img ? `${origin}/${l.img.replace(/^\//, "")}` : undefined })),
-    payer: { name: order.customer.nombre, surname: order.customer.apellido, identification: { type: "DNI", number: order.customer.dni } },
+    payer: { name: order.customer.nombre, surname: order.customer.apellido },
     external_reference: id,
     statement_descriptor: "3B MOTO SHOP",
     back_urls: { success: `${origin}/?pago=ok&pedido=${id}`, pending: `${origin}/?pago=pendiente&pedido=${id}`, failure: `${origin}/?pago=error&pedido=${id}` },
