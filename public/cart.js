@@ -3,7 +3,7 @@
   var d = document, KEY = "3b-cart", WA = "543856229058";
   var TALLES = ["XS", "S", "M", "L", "XL", "XXL"];
   var cart = load();
-  var state = { view: "cart", customer: { name: "", phone: "" }, delivery: "retiro", method: "mp", error: "", busy: false, result: null };
+  var state = { view: "cart", customer: { name: "", dni: "", phone: "" }, delivery: "retiro", method: "mp", error: "", busy: false, result: null };
   var drawer = d.getElementById("drawer"), body = d.getElementById("drawerBody"), foot = d.getElementById("drawerFoot");
   var count = d.getElementById("cartCount"), openBtn = d.getElementById("cartOpen"), lastFocus = null;
 
@@ -57,6 +57,7 @@
     h += '<p class="note" style="font-size:13px;margin-top:10px">¿No sabés tu talle? <a href="#tipos" data-close style="color:var(--accent)">Mirá la guía de talles</a>. Confirmamos stock por WhatsApp.</p>';
     h += '<form class="form" id="coForm" novalidate>' +
       '<label>Nombre y apellido<input name="name" autocomplete="name" required value="' + esc(state.customer.name) + '"></label>' +
+      '<label>DNI<input name="dni" inputmode="numeric" autocomplete="off" required placeholder="Sin puntos" maxlength="10" value="' + esc(state.customer.dni) + '"></label>' +
       '<label>Teléfono / WhatsApp<input name="phone" type="tel" inputmode="tel" autocomplete="tel" required placeholder="385 ..." value="' + esc(state.customer.phone) + '"></label>' +
       '<input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">' +
       '<fieldset class="opts"><legend>Entrega</legend>' +
@@ -87,13 +88,14 @@
     if (t.matches("select[data-i]")) { cart[+t.getAttribute("data-i")].talle = t.value; t.classList.toggle("need", !t.value); save(); }
     if (t.name === "delivery" || t.name === "method") { state[t.name] = t.value; render(); }
   });
-  body.addEventListener("input", function (ev) { var t = ev.target; if (t.name === "name" || t.name === "phone") state.customer[t.name] = t.value; });
+  body.addEventListener("input", function (ev) { var t = ev.target; if (t.name === "name" || t.name === "phone" || t.name === "dni") state.customer[t.name] = t.value; });
 
   function submit() {
     state.error = "";
     var miss = cart.find(function (l) { return l.s && !l.talle; });
     if (miss) { state.error = 'Elegí el talle de "' + miss.name + '".'; return render(); }
-    if (state.customer.name.trim().length < 2) { state.error = "Escribí tu nombre."; return render(); }
+    if (state.customer.name.trim().split(/\s+/).length < 2) { state.error = "Escribí tu nombre y apellido."; return render(); }
+    if (!/^\d{7,8}$/.test(state.customer.dni.replace(/\D/g, ""))) { state.error = "Escribí tu DNI (7 u 8 números, sin puntos)."; return render(); }
     if (state.customer.phone.replace(/\D/g, "").length < 8) { state.error = "Escribí un teléfono válido."; return render(); }
     state.busy = true; render();
     var hp = d.querySelector('#coForm [name="website"]');

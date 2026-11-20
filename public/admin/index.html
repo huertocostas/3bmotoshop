@@ -87,6 +87,36 @@ dialog::backdrop{background:rgba(4,5,15,.7)}
 dialog{overflow-x:hidden}
 .mbody>*,.photo>*{min-width:0}
 input[type=file]{max-width:100%;font-size:14px}
+/* pestañas, stock y ventas */
+.tabs{display:flex;gap:4px;margin-left:8px}
+.tabs button{background:none;border:0;color:var(--muted);font:inherit;font-size:15px;padding:8px 12px;border-radius:8px;cursor:pointer}
+.tabs button:hover{color:var(--bone)}
+.tabs button[aria-current]{color:var(--bone);background:var(--ink-3)}
+.qty{display:grid;grid-template-columns:auto;gap:4px;width:72px}
+.qty span{font:600 13px/16px "JetBrains Mono",ui-monospace,monospace;color:var(--muted)}
+.qty input{min-height:40px;text-align:center;font-variant-numeric:tabular-nums}
+#unico{width:120px}
+.venta{border-bottom:1px solid var(--line);padding:12px 0;display:grid;gap:8px}
+.vh{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.vh .tot{margin-left:auto;font-variant-numeric:tabular-nums}
+.vb{display:grid;gap:4px;font-size:15px}
+.vb a{color:var(--accent)}
+.va{display:flex;gap:8px;flex-wrap:wrap}
+.va .btn{min-height:36px;padding:0 14px;font-size:14px}
+.meta{font:500 12px/16px "JetBrains Mono",ui-monospace,monospace;color:var(--muted)}
+.badge{font:600 12px/16px "JetBrains Mono",ui-monospace,monospace;padding:2px 8px;border-radius:6px;background:var(--ink-3);color:var(--muted)}
+.badge.pagada{color:var(--green)}
+.badge.pendiente{color:var(--amber)}
+.badge.cancelada{color:var(--red)}
+.bajo summary{cursor:pointer;list-style:none}
+.bajo summary::-webkit-details-marker{display:none}
+.bajo summary h2::after{content:" +";color:var(--muted)}
+.bajo[open] summary h2::after{content:" −"}
+.tbl{display:grid}
+.tbl>div{display:grid;grid-template-columns:1fr auto 72px;gap:12px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:15px}
+.tbl b{text-align:right;font-variant-numeric:tabular-nums}
+.tbl b.cero{color:var(--red)}
+@media (max-width:640px){.tabs{margin-left:0}.top img{display:none}}
 </style>
 </head>
 <body>

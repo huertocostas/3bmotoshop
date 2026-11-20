@@ -1,6 +1,8 @@
 // POST /api/checkout — crea el pago en Mercado Pago o registra una reserva para pagar en efectivo.
+// Con la base D1, cada pedido queda como venta 'pendiente' (clientes / ventas / detalle_ventas).
 import { priceOrder, orderId, nextOpening, notifyAdmin, summary, money, json, SHOP } from "../../lib/shop.js";
 import { getCatalog } from "../../lib/catalog-store.js";
+import { dbCreateSale, dbSetSaleState, saleCode } from "../../lib/db.js";
 
 export async function onRequestPost({ request, env, waitUntil }) {
   let body;
@@ -9,10 +11,18 @@ export async function onRequestPost({ request, env, waitUntil }) {
 
   let order;
   try { order = priceOrder(body, await getCatalog(env)); } catch (e) { return json({ error: e.message }, 400); }
-  const id = orderId();
+  const method = body.method === "efectivo" ? "efectivo" : "mp";
+  if (method === "mp" && !env.MP_ACCESS_TOKEN) return json({ error: "El pago con Mercado Pago todavía no está configurado." }, 503);
+
+  let ventaId = null;
+  if (env.DB) {
+    try { ventaId = await dbCreateSale(env.DB, order, method); }
+    catch (e) { console.error("venta", e); return json({ error: "No se pudo registrar el pedido. Probá de nuevo o escribinos por WhatsApp." }, 500); }
+  }
+  const id = ventaId ? saleCode(ventaId) : orderId();
   const origin = new URL(request.url).origin;
 
-  if (body.method === "efectivo") {
+  if (method === "efectivo") {
     const when = nextOpening();
     const text = `🛵 *Reserva para pagar en efectivo* ${id}\n${summary(order)}\n${when.text}`;
     waitUntil(notifyAdmin(env, text));
@@ -20,13 +30,11 @@ export async function onRequestPost({ request, env, waitUntil }) {
       whatsappText: `Hola! Hice la reserva ${id} en la web para pagar en efectivo.\n${summary(order)}` });
   }
 
-  if (!env.MP_ACCESS_TOKEN) return json({ error: "El pago con Mercado Pago todavía no está configurado." }, 503);
-
   const pref = {
     items: order.lines.map((l) => ({ id: l.id, title: `${l.title}${l.talle ? ` · talle ${l.talle}` : ""}`.slice(0, 250),
       quantity: l.qty, unit_price: l.unit, currency_id: "ARS", category_id: "fashion",
       picture_url: l.img ? `${origin}/${l.img.replace(/^\//, "")}` : undefined })),
-    payer: { name: order.customer.name },
+    payer: { name: order.customer.nombre, surname: order.customer.apellido, identification: { type: "DNI", number: order.customer.dni } },
     external_reference: id,
     statement_descriptor: "3B MOTO SHOP",
     back_urls: { success: `${origin}/?pago=ok&pedido=${id}`, pending: `${origin}/?pago=pendiente&pedido=${id}`, failure: `${origin}/?pago=error&pedido=${id}` },
@@ -40,11 +48,14 @@ export async function onRequestPost({ request, env, waitUntil }) {
 
   const r = await fetch("https://api.mercadopago.com/checkout/preferences", {
     method: "POST",
-    headers: { authorization: `Bearer ${env.MP_ACCESS_TOKEN}`, "content-type": "application/json", "x-idempotency-key": id },
+    headers: { authorization: `Bearer ${env.MP_ACCESS_TOKEN}`, "content-type": "application/json", "x-idempotency-key": id + "-" + Date.now() },
     body: JSON.stringify(pref),
   });
   const data = await r.json().catch(() => ({}));
-  if (!r.ok) return json({ error: "Mercado Pago no respondió. Probá de nuevo en un rato o escribinos por WhatsApp.", detail: data?.message }, 502);
+  if (!r.ok) {
+    if (ventaId) waitUntil(dbSetSaleState(env.DB, ventaId, "cancelada", { onlyFromPending: true }).catch(() => {}));
+    return json({ error: "Mercado Pago no respondió. Probá de nuevo en un rato o escribinos por WhatsApp.", detail: data?.message }, 502);
+  }
 
   const url = env.MP_ACCESS_TOKEN.startsWith("TEST-") ? data.sandbox_init_point : data.init_point;
   return json({ ok: true, method: "mp", id, url });

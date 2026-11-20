@@ -5,3 +5,10 @@ compatibility_date = "2025-10-11"
 [[kv_namespaces]]
 binding = "DATA"
 id = "363d973b57c6434181d6406a8a0dd61c"
+
+# Base de datos de la tienda (esquema gestion_cascos). Migraciones en migrations/.
+[[d1_databases]]
+binding = "DB"
+database_name = "gestion_cascos"
+database_id = "1a0bf2d3-4f48-4420-8a6b-f7b34c6f548c"
+migrations_dir = "migrations"

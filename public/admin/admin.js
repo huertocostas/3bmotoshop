@@ -1,8 +1,8 @@
 // Panel de administración del catálogo de 3B Moto Shop.
 (function () {
-  var TALLES = ["XS", "S", "M", "L", "XL", "XXL"];
+  var TALLES = ["XS", "S", "M", "L", "XL", "XXL"], UNICO = "Único", CATS = ["Integral", "Modular", "Cross", "Accesorios"];
   var app = document.getElementById("app");
-  var cat = null, version = 0, dirty = false, query = "", saving = false;
+  var cat = null, version = 0, dirty = false, query = "", saving = false, tab = "cat", report = null;
   var SV = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
   var I = { edit: SV + '<path d="M12 20h9"/><path d="M16.4 3.6a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4Z"/></svg>', up: SV + '<path d="m18 15-6-6-6 6"/></svg>',
     down: SV + '<path d="m6 9 6 6 6-6"/></svg>', x: SV + '<path d="M18 6 6 18M6 6l12 12"/></svg>', plus: SV + '<path d="M12 5v14M5 12h14"/></svg>' };
@@ -53,14 +53,27 @@
     });
   }
 
+  function stockText(p) {
+    var st = p.stock || {};
+    if (p.sizes === null) { var n = st[UNICO] || 0; return n ? n + (n === 1 ? " unidad" : " unidades") : "Sin stock"; }
+    var parts = TALLES.filter(function (t) { return st[t] > 0; }).map(function (t) { return t + " " + st[t]; });
+    return parts.length ? "Stock: " + parts.join(" · ") : "Sin stock";
+  }
+  function header() {
+    return '<header class="top"><div class="wrap"><img src="/img/logo-88.webp" alt="3B Moto Shop" width="151" height="34">' +
+      '<nav class="tabs" aria-label="Secciones"><button type="button" data-tab="cat"' + (tab === "cat" ? ' aria-current="page"' : "") + '>Catálogo</button>' +
+      '<button type="button" data-tab="ventas"' + (tab === "ventas" ? ' aria-current="page"' : "") + ">Ventas</button></nav><span class=\"sp\"></span>" +
+      (tab === "cat" ? '<span id="status" class="status"></span><button class="btn" id="save" type="button">Guardar cambios</button>' : "") + "</div></header>";
+  }
+
   // ---------- Lista ----------
   function render() {
+    if (tab === "ventas") return renderVentas();
     var q = query.trim().toLowerCase();
-    var html = '<header class="top"><div class="wrap"><img src="/img/logo-88.webp" alt="3B Moto Shop" width="151" height="34"><span class="sp"></span>' +
-      '<span id="status" class="status"></span><button class="btn" id="save" type="button">Guardar cambios</button></div></header><main class="wrap">' +
+    var html = header() + '<main class="wrap">' +
       '<div class="bar"><input type="search" id="q" placeholder="Buscar producto…" value="' + esc(query) + '" aria-label="Buscar producto">' +
       '<button class="btn btn--ghost" id="add" type="button">' + I.plus + 'Agregar producto</button></div>' +
-      '<p class="help">Cambiá precios y disponibilidad acá mismo, o tocá el lápiz para editar todo (foto, talles, marca). Después tocá <b>Guardar cambios</b>: se ve en la página al instante. ' +
+      '<p class="help">Cambiá precios y disponibilidad acá mismo, o tocá el lápiz para editar todo (foto, stock por talle, marca, categoría). Cada venta pagada descuenta el stock sola. Después tocá <b>Guardar cambios</b>: se ve en la página al instante. ' +
       '<a href="/#catalogo" target="_blank" rel="noopener" style="color:var(--cyan)">Ver página</a> · <a href="#" id="logout" style="color:var(--muted)">Salir</a></p>';
     var shown = 0;
     cat.brands.forEach(function (b, bi) {
@@ -72,7 +85,7 @@
         (q ? "" : '<button class="ico" data-mv="' + bi + '" data-d="-1" aria-label="Subir marca ' + esc(b) + '"' + (bi === 0 ? " disabled" : "") + '>' + I.up + '</button><button class="ico" data-mv="' + bi + '" data-d="1" aria-label="Bajar marca ' + esc(b) + '"' + (bi === cat.brands.length - 1 ? " disabled" : "") + ">" + I.down + "</button>" +
           '<button class="ico" data-rn="' + bi + '" aria-label="Renombrar marca ' + esc(b) + '">' + I.edit + '</button>') + "</div>";
       items.sort(function (a, c) { return a.price - c.price; }).forEach(function (p) {
-        var sizes = p.sizes === null ? "Sin talle" : p.sizes.length ? "Talles: " + p.sizes.join(" ") : "Sin talles en stock";
+        var sizes = stockText(p);
         html += '<div class="row' + (p.active === false ? " off" : "") + '">' +
           (p.img ? '<img src="' + thumb(p) + '" alt="" loading="lazy" width="56" height="70">' : '<div class="noimg"></div>') +
           '<div class="info"><div class="nm">' + esc(p.name) + '</div><div class="meta">' + esc(sizes) + "</div></div>" +
@@ -99,6 +112,8 @@
   });
   app.addEventListener("click", function (e) {
     var t = e.target.closest("button, a"); if (!t) return;
+    if (t.dataset.tab) { if (t.dataset.tab !== tab) { tab = t.dataset.tab; if (tab === "ventas") report = null; render(); } return; }
+    if (t.dataset.venta) return setVenta(+t.dataset.venta, t.dataset.estado, t);
     if (t.id === "save") return save();
     if (t.id === "add") return edit(null);
     if (t.id === "logout") { e.preventDefault(); if (dirty && !confirm("Tenés cambios sin guardar. ¿Salir igual?")) return; dirty = false; api("/api/admin/login", { method: "DELETE" }).then(function () { showLogin(); }); return; }
@@ -113,10 +128,59 @@
   });
   function find(id) { return cat.products.filter(function (p) { return p.id === id; })[0]; }
 
+  // ---------- Ventas (tablas ventas / detalle_ventas y vistas del esquema) ----------
+  var ESTADO = { pendiente: "Pendiente", pagada: "Pagada", cancelada: "Cancelada" };
+  function fecha(s) { var d = new Date(String(s).replace(" ", "T") + "Z"); return d.toLocaleString("es-AR", { timeZone: "America/Argentina/Cordoba", day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" }); }
+  function renderVentas() {
+    var html = header() + '<main class="wrap">';
+    if (!report) {
+      app.innerHTML = html + '<p class="empty">Cargando ventas…</p></main>';
+      api("/api/admin/ventas").then(function (r) {
+        if (r._status === 401) return showLogin();
+        report = r.ventas ? r : { error: r.error || "No se pudieron cargar las ventas." }; if (tab === "ventas") render();
+      });
+      return;
+    }
+    if (report.error) { app.innerHTML = html + '<p class="empty">' + esc(report.error) + "</p></main>"; return; }
+    html += '<p class="help">Los pagos con Mercado Pago se marcan solos. Las reservas en efectivo marcalas como pagadas cuando las cobres: ahí se descuenta el stock. Cancelar una venta pagada devuelve el stock.</p>';
+    html += '<section class="group"><div class="group__head"><h2>Últimas ventas<small>' + report.ventas.length + "</small></h2></div>";
+    if (!report.ventas.length) html += '<p class="empty">Todavía no hay ventas.</p>';
+    report.ventas.forEach(function (v) {
+      var items = v.items.map(function (i) { return i.cantidad + "× " + esc(i.nombre) + (i.talle && i.talle !== UNICO ? " · " + esc(i.talle) : ""); }).join("<br>");
+      var acts = (v.estado !== "pagada" ? '<button class="btn" type="button" data-venta="' + v.id_venta + '" data-estado="pagada">Marcar pagada</button>' : "") +
+        (v.estado !== "cancelada" ? '<button class="btn btn--ghost" type="button" data-venta="' + v.id_venta + '" data-estado="cancelada">Cancelar</button>' : "");
+      html += '<div class="venta"><div class="vh"><b>' + esc(v.codigo) + '</b><span class="badge ' + v.estado + '">' + ESTADO[v.estado] + '</span><span class="meta">' + fecha(v.fecha_venta) + " · " +
+        (v.metodo === "efectivo" ? "Efectivo" : "Mercado Pago") + " · " + (v.entrega === "envio" ? "Envío" : "Retiro") + '</span><b class="tot">' + money(v.total) + "</b></div>" +
+        '<div class="vb"><div>' + items + '</div><div class="meta">' + esc(v.cliente) + " · DNI " + esc(v.dni) + (v.telefono ? ' · <a href="https://wa.me/' + esc(String(v.telefono).replace(/\D/g, "")) + '" target="_blank" rel="noopener">' + esc(v.telefono) + "</a>" : "") + (v.pago_mp ? " · Pago MP #" + esc(v.pago_mp) : "") + "</div></div>" +
+        '<div class="va">' + acts + "</div></div>";
+    });
+    html += "</section>";
+    var ceros = report.stockBajo.filter(function (s) { return !s.stock; }).length;
+    html += '<section class="group"><details class="bajo"><summary class="group__head"><h2>Stock bajo<small>' + ceros + " talles sin stock · " + (report.stockBajo.length - ceros) + " con 1 unidad</small></h2></summary>" +
+      (report.stockBajo.length ? '<div class="tbl">' + report.stockBajo.map(function (s) { return "<div><span>" + esc(s.nombre) + '</span><span class="meta">' + esc(s.talle) + '</span><b class="' + (s.stock ? "" : "cero") + '">' + s.stock + "</b></div>"; }).join("") + "</div>" : '<p class="empty">Nada para reponer.</p>') + "</details></section>";
+    if (report.top.length) html += '<section class="group"><div class="group__head"><h2>Más vendidos</h2></div><div class="tbl">' + report.top.map(function (t) { return "<div><span>" + esc(t.casco) + '</span><span class="meta">' + t.unidades_vendidas + " u.</span><b>" + money(t.ingresos) + "</b></div>"; }).join("") + "</div></section>";
+    if (report.clientes.length) html += '<section class="group"><div class="group__head"><h2>Mejores clientes</h2></div><div class="tbl">' + report.clientes.map(function (c) { return "<div><span>" + esc(c.cliente) + '</span><span class="meta">' + c.compras_realizadas + (c.compras_realizadas === 1 ? " compra" : " compras") + "</span><b>" + money(c.total_gastado) + "</b></div>"; }).join("") + "</div></section>";
+    app.innerHTML = html + '<div style="height:60px"></div></main><dialog id="dlg"></dialog>';
+  }
+  function setVenta(id, estado, btn) {
+    var v = report.ventas.filter(function (x) { return x.id_venta === id; })[0];
+    var msg = estado === "pagada" ? "¿Marcar " + v.codigo + " como pagada? Se descuenta el stock." : "¿Cancelar " + v.codigo + "?" + (v.estado === "pagada" ? " Se devuelve el stock." : "");
+    if (!confirm(msg)) return;
+    btn.disabled = true;
+    api("/api/admin/ventas", { method: "POST", json: { id: id, estado: estado } }).then(function (r) {
+      if (!r.ok) { btn.disabled = false; return alert(r.error || "No se pudo cambiar."); }
+      toast(estado === "pagada" ? "Venta pagada. Stock descontado." : "Venta cancelada.");
+      report = null; render();
+      if (!dirty) load(); // el stock cambió: recarga el catálogo (si no hay cambios sin guardar)
+    });
+  }
+
   // ---------- Editar / agregar ----------
   function edit(id) {
     var isNew = !id;
-    var p = isNew ? { id: "p" + Date.now().toString(36), brand: cat.brands[0] || "", name: "", desc: "", price: 0, img: "", sizes: TALLES.slice(), active: true } : Object.assign({}, find(id));
+    var p = isNew ? { id: "p" + Date.now().toString(36), brand: cat.brands[0] || "", categoria: "Integral", name: "", desc: "", price: 0, img: "", sizes: [], stock: {}, active: true } : Object.assign({}, find(id));
+    var st = p.stock || {};
+    var cats = CATS.concat(cat.products.map(function (x) { return x.categoria; })).filter(function (c, i, a) { return c && a.indexOf(c) === i; });
     var dlg = document.getElementById("dlg");
     var opts = cat.brands.map(function (b) { return "<option" + (b === p.brand ? " selected" : "") + ">" + esc(b) + "</option>"; }).join("") + '<option value="__new">+ Nueva marca…</option>';
     dlg.innerHTML = '<form method="dialog" id="ef"><div class="mhead"><h3 style="font-size:20px">' + (isNew ? "Nuevo producto" : "Editar producto") + '</h3><button class="ico" value="cancel" aria-label="Cerrar">' + I.x + '</button></div><div class="mbody">' +
@@ -124,16 +188,18 @@
       '<label>Foto<input type="file" id="pfile" accept="image/*"><small id="pmsg">Se recorta y achica sola (formato vertical).</small></label></div>' +
       '<div class="two"><label>Marca<select name="brand">' + opts + '</select></label><label>Precio ($)<input type="number" name="price" inputmode="numeric" min="0" step="100" required value="' + p.price + '"></label></div>' +
       '<label id="nbw" hidden>Nombre de la nueva marca<input type="text" name="newbrand" maxlength="40"></label>' +
-      '<label>Nombre<input type="text" name="name" maxlength="120" required value="' + esc(p.name) + '"></label>' +
+      '<label>Categoría<select name="categoria">' + cats.map(function (c) { return "<option" + (c === p.categoria ? " selected" : "") + ">" + esc(c) + "</option>"; }).join("") + "</select></label>" +
+      '<label>Nombre<input type="text" name="name" maxlength="100" required value="' + esc(p.name) + '"></label>' +
       '<label>Descripción<textarea name="desc" maxlength="300">' + esc(p.desc) + "</textarea></label>" +
-      '<fieldset style="border:0;padding:0;margin:0;display:grid;gap:10px"><legend style="color:var(--muted);font-size:14px;margin-bottom:6px">Talles en stock</legend>' +
-      '<div class="sizes" id="sizes">' + TALLES.map(function (t) { return '<label class="chip"><input type="checkbox" name="sz" value="' + t + '"' + (p.sizes && p.sizes.indexOf(t) >= 0 ? " checked" : "") + "><span>" + t + "</span></label>"; }).join("") + "</div>" +
-      '<label class="check"><input type="checkbox" name="nosize"' + (p.sizes === null ? " checked" : "") + "> Este producto no usa talle (por ejemplo, antiparras)</label></fieldset>" +
+      '<fieldset style="border:0;padding:0;margin:0;display:grid;gap:10px"><legend style="color:var(--muted);font-size:14px;margin-bottom:6px">Stock: unidades por talle (0 = no hay)</legend>' +
+      '<div class="sizes" id="sizes">' + TALLES.map(function (t) { return '<label class="qty"><span>' + t + '</span><input type="number" name="sz_' + t + '" min="0" max="9999" step="1" inputmode="numeric" value="' + (st[t] || 0) + '"></label>'; }).join("") + "</div>" +
+      '<label class="check"><input type="checkbox" name="nosize"' + (p.sizes === null ? " checked" : "") + "> Este producto no usa talle (por ejemplo, antiparras)</label>" +
+      '<label class="qty" id="unico"><span>Unidades</span><input type="number" name="sz_unico" min="0" max="9999" step="1" inputmode="numeric" value="' + (st[UNICO] || 0) + '"></label></fieldset>' +
       '<label class="check"><input type="checkbox" name="active"' + (p.active !== false ? " checked" : "") + "> Mostrar en la página (disponible)</label>" +
       '<p class="err" id="eerr" role="alert"></p></div><div class="mfoot">' + (isNew ? "<span></span>" : '<button class="btn btn--danger" type="button" id="del">Borrar producto</button>') +
       '<span style="display:flex;gap:10px"><button class="btn btn--ghost" value="cancel">Cancelar</button><button class="btn" type="button" id="ok">Listo</button></span></div></form>';
     var f = document.getElementById("ef");
-    function syncSizes() { document.getElementById("sizes").style.opacity = f.nosize.checked ? ".35" : "1"; f.querySelectorAll("[name=sz]").forEach(function (c) { c.disabled = f.nosize.checked; }); }
+    function syncSizes() { document.getElementById("sizes").hidden = f.nosize.checked; document.getElementById("unico").hidden = !f.nosize.checked; }
     syncSizes(); f.nosize.addEventListener("change", syncSizes);
     f.brand.addEventListener("change", function () { document.getElementById("nbw").hidden = f.brand.value !== "__new"; });
     document.getElementById("pfile").addEventListener("change", function (e) {
@@ -153,7 +219,10 @@
       var price = Math.round(Number(f.price.value));
       if (!(price > 0)) return (err.textContent = "Poné un precio válido.");
       p.brand = brand; p.name = f.name.value.trim(); p.desc = f.desc.value.trim(); p.price = price; p.active = f.active.checked;
-      p.sizes = f.nosize.checked ? null : [].slice.call(f.querySelectorAll("[name=sz]:checked")).map(function (c) { return c.value; });
+      p.categoria = f.categoria.value;
+      var n = function (el) { return Math.max(0, Math.min(9999, Math.round(Number(el.value) || 0))); };
+      if (f.nosize.checked) { p.stock = {}; p.stock[UNICO] = n(f.sz_unico); p.sizes = null; }
+      else { p.stock = {}; TALLES.forEach(function (t) { p.stock[t] = n(f["sz_" + t]); }); p.sizes = TALLES.filter(function (t) { return p.stock[t] > 0; }); }
       if (cat.brands.indexOf(brand) < 0) cat.brands.push(brand);
       if (isNew) cat.products.push(p); else Object.assign(find(p.id), p);
       dlg.close(); markDirty(); render();

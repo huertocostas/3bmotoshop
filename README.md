@@ -5,7 +5,7 @@ Sitio de una página para **3B Moto Shop**, casa de cascos certificados y acceso
 - `public/` — sitio estático (HTML/CSS/JS, imágenes, video).
 - `functions/api/` — funciones de Cloudflare Pages: `checkout` (Mercado Pago o reserva en efectivo) y `mp-webhook` (aviso de pagos aprobados).
 - `lib/` — lógica compartida (horarios, precios del servidor, aviso por WhatsApp). `lib/catalog.js` se genera solo.
-- `public/admin/` — **panel del catálogo** en `/admin`: productos, precios, fotos, talles en stock y marcas. Los cambios se guardan en Cloudflare KV y se ven al instante.
+- `public/admin/` — **panel** en `/admin`: catálogo (precios, fotos, stock por talle, marcas, categorías) y **ventas** (marcar pagada/cancelada, stock bajo, más vendidos).
 - `tools/` — catálogo inicial (`catalogo.json` + `build_catalog.py`), que genera `lib/seed.js` y la versión estática de respaldo. Solo se usa si el catálogo de KV está vacío.
 
 ## Variables de entorno (Cloudflare Pages → Settings → Variables and Secrets)
@@ -13,7 +13,15 @@ Sitio de una página para **3B Moto Shop**, casa de cascos certificados y acceso
 - `ADMIN_PASSWORD` — contraseña del panel `/admin`. Cambiarla cierra todas las sesiones abiertas.
 - `CALLMEBOT_PHONE`, `CALLMEBOT_APIKEY` — opcional, para recibir cada venta por WhatsApp.
 
-El binding de KV (`DATA`) está en `wrangler.toml`.
+Los bindings están en `wrangler.toml`: `DB` (D1) y `DATA` (KV, fotos subidas desde el panel y límite de intentos de login).
+
+## Base de datos (Cloudflare D1, esquema gestion_cascos)
+- `migrations/0001_gestion_cascos.sql` — el esquema de [gestion-cascos](https://github.com/huertocostas/gestion-cascos) pasado a SQLite: marcas, categorias, productos, clientes, ventas, detalle_ventas y las vistas vw_detalle_ventas, vw_stock_bajo, vw_clientes_frecuentes, vw_top_cascos. Sin los datos de ejemplo.
+- `migrations/0002_tienda_web.sql` — tablas aparte para lo que la web necesita: `web_modelos` (descripción, foto y visible de cada tarjeta), `web_ventas` (forma de pago, entrega, n.º de pago MP) y `web_config` (versión del catálogo, orden de marcas).
+- Cada tarjeta del catálogo es un **modelo**; en `productos` hay **una fila por talle** con su stock (`codigo` = `<modelo>-<talle>`, los que no usan talle: talle `Único`, código `<modelo>-U`).
+- Cada compra crea cliente (por DNI), venta `pendiente` y su detalle. Mercado Pago aprobado → `pagada` y descuenta stock en un solo batch; rechazado → `cancelada` sin tocar stock. Las reservas en efectivo se marcan pagadas desde el panel.
+- Sin el binding `DB` el sitio sigue funcionando con el catálogo de KV.
+- Aplicar migraciones: `npx wrangler d1 migrations apply gestion_cascos --remote`. Carga inicial desde KV: `node tools/catalog_to_sql.mjs catalogo-kv.json > carga.sql`.
 
 ## Desarrollo local
 `npm install` y `npm run dev` (Wrangler). Variables locales en `.dev.vars`.
