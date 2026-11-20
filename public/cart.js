@@ -3,7 +3,7 @@
   var d = document, KEY = "3b-cart", WA = "543856229058";
   var TALLES = ["XS", "S", "M", "L", "XL", "XXL"];
   var cart = load();
-  var state = { view: "cart", customer: { name: "", dni: "", phone: "" }, delivery: "retiro", method: "mp", error: "", busy: false, result: null };
+  var state = { view: "cart", customer: { name: "", dni: "", phone: "" }, delivery: "retiro", method: "mp", error: "", busy: false, result: null, may: false };
   var drawer = d.getElementById("drawer"), body = d.getElementById("drawerBody"), foot = d.getElementById("drawerFoot");
   var count = d.getElementById("cartCount"), openBtn = d.getElementById("cartOpen"), lastFocus = null;
   var title = d.getElementById("drawerTitle");
@@ -43,23 +43,33 @@
   drawer.addEventListener("click", function (ev) { if (ev.target.closest("[data-close]")) close(); });
   d.addEventListener("keydown", function (ev) { if (ev.key === "Escape" && drawer.classList.contains("is-open")) close(); });
 
-  var MAY_LINK = '<p class="note may-link">¿Comprás por mayor? <button type="button" class="linkbtn" data-may>Pedí precio mayorista</button></p>';
+  // Interruptor "Quiero precio mayorista": cambia el formulario de compra por la consulta mayorista (único lugar con DNI).
+  function maySwitch() {
+    return '<label class="mayswitch"><input type="checkbox" id="maySw"' + (state.may ? " checked" : "") + '><span class="tg" aria-hidden="true"></span>' +
+      "<span><b>Quiero precio mayorista</b><small>Para comercios y revendedores</small></span></label>" +
+      (state.may ? '<p class="maynote">El precio mayorista no es el mismo que ves en la página. Para saberlo, dejanos tus datos y te mandamos la consulta al WhatsApp mayorista: te contestamos por ahí con los precios.</p>' : "");
+  }
+  function linesHtml() {
+    return cart.map(function (l, i) {
+      var sel = l.s ? '<select data-i="' + i + '" class="' + (l.talle || state.may ? "" : "need") + '" aria-label="Talle de ' + esc(l.name) + '"><option value="">' + (state.may ? "Talle (opcional)" : "Elegí talle") + "</option>" +
+        (l.sizes && l.sizes.length ? l.sizes : TALLES).map(function (t) { return '<option' + (l.talle === t ? " selected" : "") + ">" + t + "</option>"; }).join("") + "</select>" : "";
+      return '<div class="line"><img src="' + esc(l.thumb || ("img/p/" + l.id + "-320.webp")) + '" alt="" width="64" height="80"><div><h4>' + esc(l.name) + '</h4><div class="lp">' + (state.may ? '<span class="tachado">' + money(l.price) + "</span> minorista" : money(l.price)) + "</div>" + sel + "</div>" +
+        '<div class="qty"><button type="button" data-q="-1" data-i="' + i + '" aria-label="Quitar uno">−</button><span>' + l.qty + '</span><button type="button" data-q="1" data-i="' + i + '" aria-label="Agregar uno">+</button></div></div>';
+    }).join("");
+  }
   function render() {
-    title.textContent = state.view === "mayorista" || (state.view === "done" && state.result && state.result.method === "mayorista") ? "Precio mayorista" : "Tu pedido";
+    var mayDone = state.view === "done" && state.result && state.result.method === "mayorista";
+    title.textContent = (state.view !== "done" && state.may) || mayDone ? "Precio mayorista" : "Tu pedido";
     if (state.view === "done") return renderDone();
-    if (state.view === "mayorista") return renderMay();
+    if (state.may) return renderMay();
     if (!cart.length) {
-      body.innerHTML = '<p class="empty">Tu carrito está vacío.<br>Elegí un casco del catálogo.</p>' + MAY_LINK;
+      body.innerHTML = '<p class="empty">Tu carrito está vacío.<br>Elegí un casco del catálogo.</p>' + maySwitch();
       foot.innerHTML = '<a class="btn btn--ghost pay" href="#catalogo" data-close>Ver catálogo</a>';
       return;
     }
-    var h = cart.map(function (l, i) {
-      var sel = l.s ? '<select data-i="' + i + '" class="' + (l.talle ? "" : "need") + '" aria-label="Talle de ' + esc(l.name) + '"><option value="">Elegí talle</option>' +
-        (l.sizes && l.sizes.length ? l.sizes : TALLES).map(function (t) { return '<option' + (l.talle === t ? " selected" : "") + ">" + t + "</option>"; }).join("") + "</select>" : "";
-      return '<div class="line"><img src="' + esc(l.thumb || ("img/p/" + l.id + "-320.webp")) + '" alt="" width="64" height="80"><div><h4>' + esc(l.name) + '</h4><div class="lp">' + money(l.price) + "</div>" + sel + "</div>" +
-        '<div class="qty"><button type="button" data-q="-1" data-i="' + i + '" aria-label="Quitar uno">−</button><span>' + l.qty + '</span><button type="button" data-q="1" data-i="' + i + '" aria-label="Agregar uno">+</button></div></div>';
-    }).join("");
+    var h = linesHtml();
     h += '<p class="note" style="font-size:13px;margin-top:10px">¿No sabés tu talle? <a href="#tipos" data-close style="color:var(--accent)">Mirá la guía de talles</a>. Confirmamos stock por WhatsApp.</p>';
+    h += maySwitch();
     h += '<form class="form" id="coForm" novalidate>' +
       '<label>Nombre y apellido<input name="name" autocomplete="name" required value="' + esc(state.customer.name) + '"></label>' +
       '<label>Teléfono / WhatsApp<input name="phone" type="tel" inputmode="tel" autocomplete="tel" required placeholder="385 ..." value="' + esc(state.customer.phone) + '"></label>' +
@@ -69,7 +79,7 @@
       opt("delivery", "envio", "Envío a domicilio", "A todo el país. El costo se coordina por WhatsApp") + "</fieldset>" +
       '<fieldset class="opts"><legend>Forma de pago</legend>' +
       opt("method", "mp", "Mercado Pago", "Tarjeta de crédito, débito o dinero en cuenta") +
-      opt("method", "efectivo", "Efectivo en el local", "Reservás ahora y pagás cuando pasás a buscarlo") + "</fieldset></form>" + MAY_LINK;
+      opt("method", "efectivo", "Efectivo en el local", "Reservás ahora y pagás cuando pasás a buscarlo") + "</fieldset></form>";
     body.innerHTML = h;
     var label = state.method === "mp" ? "Pagar con Mercado Pago" : "Reservar y pagar en el local";
     foot.innerHTML = '<div class="total"><span>Total</span><b>' + money(total()) + "</b></div>" +
@@ -77,23 +87,19 @@
       (state.error ? '<p class="err" role="alert">' + esc(state.error) + "</p>" : "");
     d.getElementById("payBtn").addEventListener("click", submit);
   }
-  // ---------- Consulta por precio mayorista (el único lugar donde se pide DNI) ----------
   function renderMay() {
     var n = units();
-    body.innerHTML = '<p class="note" style="margin:0 0 4px">Dejanos tus datos y qué querés comprar. La consulta llega al WhatsApp mayorista y te contestamos por ahí con los precios.</p>' +
-      '<form class="form" id="mayForm" novalidate>' +
+    body.innerHTML = linesHtml() + maySwitch() +
+      '<form class="form" id="mayForm" novalidate style="margin-top:12px">' +
       '<label>Nombre y apellido<input name="name" autocomplete="name" required value="' + esc(state.customer.name) + '"></label>' +
       '<label>DNI<input name="dni" inputmode="numeric" autocomplete="off" required placeholder="Sin puntos" maxlength="10" value="' + esc(state.customer.dni) + '"></label>' +
       '<label>Teléfono / WhatsApp<input name="phone" type="tel" inputmode="tel" autocomplete="tel" required placeholder="385 ..." value="' + esc(state.customer.phone) + '"></label>' +
       '<label>Ciudad<input name="ciudad" autocomplete="address-level2" maxlength="80" value="' + esc(may.ciudad) + '"></label>' +
-      '<label>¿Qué querés comprar?<textarea name="message" rows="4" maxlength="1000" placeholder="Modelos, talles y cantidades">' + esc(may.message) + "</textarea></label>" +
-      (n ? '<p class="note" style="margin:0">Incluimos ' + (n === 1 ? "el producto" : "los " + n + " productos") + " de tu carrito.</p>" : "") +
+      '<label>' + (n ? "¿Algo más? (cantidades, otros modelos)" : "¿Qué querés comprar?") + '<textarea name="message" rows="3" maxlength="1000" placeholder="Modelos, talles y cantidades">' + esc(may.message) + "</textarea></label>" +
       '<input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true"></form>';
-    foot.innerHTML = '<button class="btn pay" type="button" id="mayBtn"' + (state.busy ? " disabled" : "") + ">" + (state.busy ? "Enviando…" : "Enviar consulta") + "</button>" +
-      '<button class="btn btn--ghost pay" type="button" id="mayBack">Volver al carrito</button>' +
+    foot.innerHTML = '<button class="btn pay btn--wa" type="button" id="mayBtn"' + (state.busy ? " disabled" : "") + ">" + (state.busy ? "Enviando…" : "Consultar precio por WhatsApp") + "</button>" +
       (state.error ? '<p class="err" role="alert">' + esc(state.error) + "</p>" : "");
     d.getElementById("mayBtn").addEventListener("click", submitMay);
-    d.getElementById("mayBack").addEventListener("click", function () { state.view = "cart"; state.error = ""; render(); });
   }
   function submitMay() {
     state.error = "";
@@ -101,6 +107,8 @@
     if (!/^\d{7,8}$/.test(state.customer.dni.replace(/\D/g, ""))) { state.error = "Escribí tu DNI (7 u 8 números, sin puntos)."; return render(); }
     if (state.customer.phone.replace(/\D/g, "").length < 8) { state.error = "Escribí un teléfono válido."; return render(); }
     if (!cart.length && may.message.trim().length < 3) { state.error = "Contanos qué querés comprar y cuántas unidades."; return render(); }
+    // La pestaña de WhatsApp se abre ya, en el mismo toque (si se abre después del pedido, el navegador la bloquea).
+    var win = null; try { win = window.open("", "_blank"); } catch (e) {}
     state.busy = true; render();
     var hp = d.querySelector('#mayForm [name="website"]');
     fetch("/api/mayorista", {
@@ -110,15 +118,22 @@
     }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
       .then(function (res) {
         state.busy = false;
-        if (!res.ok || !res.j.ok) { state.error = (res.j && res.j.error) || "No se pudo enviar la consulta."; return render(); }
+        if (!res.ok || !res.j.ok) { if (win) win.close(); state.error = (res.j && res.j.error) || "No se pudo enviar la consulta."; return render(); }
+        var url = "https://wa.me/" + res.j.whatsapp + "?text=" + encodeURIComponent(res.j.whatsappText || "");
+        if (win && !win.closed) win.location.href = url; else location.href = url;
         state.result = { method: "mayorista", id: res.j.id, wa: res.j.whatsapp, text: res.j.whatsappText }; state.view = "done"; may.message = ""; render();
       })
-      .catch(function () { state.busy = false; state.error = "Sin conexión. Probá de nuevo."; render(); });
+      .catch(function () { if (win) win.close(); state.busy = false; state.error = "Sin conexión. Probá de nuevo."; render(); });
   }
   d.addEventListener("click", function (ev) {
     var b = ev.target.closest("[data-may]"); if (!b) return;
-    ev.preventDefault(); state.view = "mayorista"; state.error = "";
+    ev.preventDefault(); state.may = true; state.view = "cart"; state.error = "";
     if (drawer.classList.contains("is-open")) render(); else open(true);
+  });
+  d.addEventListener("change", function (ev) {
+    if (ev.target.id !== "maySw") return;
+    state.may = ev.target.checked; state.error = ""; render();
+    var sw = d.getElementById("maySw"); if (sw) sw.focus();
   });
 
   function opt(name, val, title, sub) {
@@ -161,11 +176,12 @@
   function renderDone() {
     var r = state.result || {};
     if (r.method === "mayorista") {
-      body.innerHTML = '<div class="done"><p class="mono kicker" style="justify-content:center">Consulta registrada</p><p class="big">Falta un paso</p>' +
-        "<p>Tocá el botón para mandar la consulta al WhatsApp mayorista. Te contestamos por ahí con los precios.</p>" + (r.id ? '<span class="code">' + esc(r.id) + "</span>" : "") + "</div>";
-      foot.innerHTML = '<a class="btn pay" href="https://wa.me/' + esc(r.wa) + "?text=" + encodeURIComponent(r.text || "") + '" target="_blank" rel="noopener">Enviar por WhatsApp</a>' +
+      body.innerHTML = '<div class="done"><p class="mono kicker" style="justify-content:center">Consulta registrada</p><p class="big">Mandá el mensaje en WhatsApp</p>' +
+        "<p>Te abrimos WhatsApp con tu consulta ya escrita: solo tocá enviar. Te contestamos por ahí con los precios mayoristas.</p>" +
+        '<p style="font-size:13.5px">¿No se abrió? Tocá el botón de abajo.</p>' + (r.id ? '<span class="code">' + esc(r.id) + "</span>" : "") + "</div>";
+      foot.innerHTML = '<a class="btn pay" href="https://wa.me/' + esc(r.wa) + "?text=" + encodeURIComponent(r.text || "") + '" target="_blank" rel="noopener">Abrir WhatsApp</a>' +
         '<button class="btn btn--ghost pay" type="button" id="mayBack">Volver al carrito</button>';
-      d.getElementById("mayBack").addEventListener("click", function () { state.view = "cart"; render(); });
+      d.getElementById("mayBack").addEventListener("click", function () { state.view = "cart"; state.may = false; render(); });
       return;
     }
     var wa = "https://wa.me/" + WA + "?text=" + encodeURIComponent(r.whatsappText || "");
